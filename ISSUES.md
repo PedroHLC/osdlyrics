@@ -39,3 +39,9 @@ The messages do not originate from osdlyrics code, they come from inside Gtk.
 I have some naive code that stops the messages but the window is still not
 click-thru on startup.
 
+
+MPRIS 1.0 doesn't seem to poll a player (e.g. MOC) for current time
+===================================================================
+
+When seeking occurs in a player only supporting MPRIS 1.0, osdlyrics doesn't
+find out because it doesn't seem to send GetPosition messages (in 0.5-series).
