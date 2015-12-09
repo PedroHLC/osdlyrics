@@ -1,0 +1,39 @@
+pkgname=osdlyrics-git
+provides=osdlyrics
+conflicts=('osdlyrics' 'osdlyrics-pedrohlc')
+_pkgver=0.4.99
+pkgver=0.4.99.r780.c27e425
+pkgrel=1
+pkgdesc="A lyric show compatible with various media players + experimental ViewLyrics source + bug fixes"
+arch=('i686' 'x86_64')
+url="http://code.google.com/p/osd-lyrics/"
+license=('GPL3')
+depends=('dbus-glib' 'desktop-file-utils' 'gtk2' 'hicolor-icon-theme' 'libnotify'
+         'python2-dbus' 'python2-chardet' 'python2-gobject2' 'python2-pycurl'
+         'sqlite')
+makedepends=('intltool')
+optdepends=('gobject-introspection-runtime: proxy detection on Gnome'
+            'kdebindings-python2: proxy detection on KDE'
+            'python2-mpd: to interface with MPD')
+install=$provides.install
+source=("${provides}::git+git://github.com/PedroHLC/osdlyrics.git#branch=0.5-series")
+md5sums=('SKIP')
+
+pkgver() {
+    cd "$srcdir/$provides"
+    printf "$_pkgver.r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build()
+{
+    cd "$srcdir/$provides"
+    ./autogen.sh
+    ./configure --prefix=/usr PYTHON=/usr/bin/python2
+    make
+}
+
+package()
+{
+    cd "$srcdir/$provides"
+    make DESTDIR="$pkgdir" install
+}
