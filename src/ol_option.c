@@ -194,8 +194,10 @@ static struct TogglePropertyOptions toggle_properties[] = {
 
 static void save_check_button_option (struct CheckButtonOptions* opt);
 /* General options */
-void ol_option_display_mode_changed (GtkToggleButton *togglebutton,
-                                     gpointer user_data);
+void ol_option_display_mode_osd_changed (GtkToggleButton *togglebutton,
+                                         gpointer user_data);
+void ol_option_display_mode_scroll_changed (GtkToggleButton *togglebutton,
+                                            gpointer user_data);
 void ol_option_notify_music_changed (GtkToggleButton *togglebutton,
                                      gpointer user_data);
 void ol_option_startup_player_changed (GtkComboBox *cb,
@@ -289,20 +291,27 @@ static void font_str_changed (GtkFontButton *widget,
 static void combo_str_changed (GtkComboBox *widget,
                                struct ComboStringOptions *option);
 
+static void _display_mode_changed (OlConfigProxy *config,
+                                   const gchar *key,
+                                   gpointer data);
+
 /* General Options */
 void
-ol_option_display_mode_changed (GtkToggleButton *togglebutton,
-                                gpointer user_data)
+ol_option_display_mode_osd_changed (GtkToggleButton *togglebutton,
+                                    gpointer user_data)
 {
-  if (gtk_toggle_button_get_active (togglebutton))
-  {
-    const char *mode = "OSD";
-    if (GTK_WIDGET(togglebutton) == options.display_mode_scroll)
-      mode = "scroll";
-    ol_config_proxy_set_string (ol_config_proxy_get_instance (),
-                                "General/display-mode",
-                                mode);
-  }
+  ol_config_proxy_set_bool (ol_config_proxy_get_instance (),
+                            "General/display-mode-osd",
+                            gtk_toggle_button_get_active (togglebutton));
+}
+
+void
+ol_option_display_mode_scroll_changed (GtkToggleButton *togglebutton,
+                                    gpointer user_data)
+{
+  ol_config_proxy_set_bool (ol_config_proxy_get_instance (),
+                            "General/display-mode-scroll",
+                            gtk_toggle_button_get_active (togglebutton));
 }
 
 void
@@ -1338,16 +1347,16 @@ load_general ()
   }
   g_free (player_cmd);
 
-  char *display_mode = ol_config_proxy_get_string (config,
-                                                   "General/display-mode");
-  if (options.display_mode_scroll != NULL &&
-      ol_stricmp (display_mode, "scroll", -1) == 0)
-    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (options.display_mode_scroll),
-                                  TRUE);
-  else if (options.display_mode_osd != NULL)
-    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (options.display_mode_osd),
-                                  TRUE);
-  g_free (display_mode);
+  _display_mode_changed (config, "General/display-mode-osd", NULL);
+  _display_mode_changed (config, "General/display-mode-scroll", NULL);
+  g_signal_connect (config,
+                    "changed::General/display-mode-osd",
+                    G_CALLBACK (_display_mode_changed),
+                    NULL);
+  g_signal_connect (config,
+                    "changed::General/display-mode-scroll",
+                    G_CALLBACK (_display_mode_changed),
+                    NULL);
 }
 
 void
@@ -1618,6 +1627,19 @@ init_startup_player (GtkWidget *widget)
   /*                     1, "", */
   /*                     -1); */
   gtk_combo_box_append_text (cb, _("Customize"));
+}
+
+static void
+_display_mode_changed (OlConfigProxy *config,
+                       const gchar *key,
+                       gpointer data)
+{
+  gboolean is_osd = strcmp(key, "General/display-mode-osd") == 0;
+  gboolean display_enabled = ol_config_proxy_get_bool (config, key);
+  GtkToggleButton *display_button =
+      GTK_TOGGLE_BUTTON (is_osd ? options.display_mode_osd
+                                : options.display_mode_scroll);
+  gtk_toggle_button_set_active (display_button, display_enabled);
 }
 
 void

@@ -147,30 +147,28 @@ SimplyZhao &lt;simplyzhao@gmail.com&gt;</property>
                       <object class="GtkVBox" id="vbox-display-mode">
                         <property name="visible">True</property>
                         <child>
-                          <object class="GtkRadioButton" id="display-mode-osd">
+                          <object class="GtkCheckButton" id="display-mode-osd">
                             <property name="label" translatable="yes">OS_D</property>
                             <property name="use_underline">True</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">False</property>
-                            <property name="active">True</property>
                             <property name="draw_indicator">True</property>
-                            <signal name="toggled" handler="ol_option_display_mode_changed"/>
+                            <signal name="toggled" handler="ol_option_display_mode_osd_changed"/>
                           </object>
                           <packing>
                             <property name="position">0</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkRadioButton" id="display-mode-scroll">
+                          <object class="GtkCheckButton" id="display-mode-scroll">
                             <property name="label" translatable="yes">Sc_rolling</property>
                             <property name="use_underline">True</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">False</property>
                             <property name="draw_indicator">True</property>
-                            <property name="group">display-mode-osd</property>
-                            <signal name="toggled" handler="ol_option_display_mode_changed"/>
+                            <signal name="toggled" handler="ol_option_display_mode_scroll_changed"/>
                           </object>
                           <packing>
                             <property name="position">1</property>
@@ -1568,7 +1566,7 @@ SimplyZhao &lt;simplyzhao@gmail.com&gt;</property>
                               <object class="GtkVBox" id="vbox-download-engine">
                                 <property name="visible">True</property>
                                 <child>
-                                  <object class="GtkLabel" id="label-downlaod-engine">
+                                  <object class="GtkLabel" id="label-download-engine">
                                     <property name="visible">True</property>
                                     <property name="xalign">0</property>
                                     <property name="label" translatable="yes">Lyric _sites:</property>
@@ -1988,26 +1986,26 @@ SimplyZhao &lt;simplyzhao@gmail.com&gt;</property>
   <object class="GtkMenu" id="pop-menu">
     <property name="visible">True</property>
     <child>
-      <object class="GtkMenuItem" id="menu-switch-osd">
-        <property name="visible">True</property>
-        <property name="label" translatable="yes">OSD _mode</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="ol_menu_switch_osd"/>
-      </object>
-    </child>
-    <child>
-      <object class="GtkMenuItem" id="menu-switch-scrolling">
+      <object class="GtkCheckMenuItem" id="menu-switch-scroll">
         <property name="visible">True</property>
         <property name="label" translatable="yes">Scrolling _mode</property>
         <property name="use_underline">True</property>
-        <signal name="activate" handler="ol_menu_switch_scrolling"/>
+        <signal name="activate" handler="ol_menu_toggle_scroll"/>
+      </object>
+    </child>
+    <child>
+      <object class="GtkCheckMenuItem" id="menu-switch-osd">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">OSD _mode</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="ol_menu_toggle_osd"/>
       </object>
     </child>
     <child>
       <object class="GtkCheckMenuItem" id="menu-lock">
         <property name="visible">True</property>
         <property name="tooltip_text" translatable="yes">If locked, you can't move OSD window by mouse</property>
-        <property name="label" translatable="yes">_Lock Position</property>
+        <property name="label" translatable="yes">_Lock OSD position</property>
         <property name="use_underline">True</property>
         <signal name="activate" handler="ol_menu_lock"/>
       </object>
@@ -2016,7 +2014,7 @@ SimplyZhao &lt;simplyzhao@gmail.com&gt;</property>
       <object class="GtkCheckMenuItem" id="menu-hide">
         <property name="visible">True</property>
         <property name="tooltip_text" translatable="yes">Hide the OSD Window</property>
-        <property name="label" translatable="yes">_Hide</property>
+        <property name="label" translatable="yes">_Hide OSD</property>
         <property name="use_underline">True</property>
         <signal name="activate" handler="ol_menu_hide"/>
       </object>

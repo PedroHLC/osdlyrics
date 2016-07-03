@@ -72,11 +72,14 @@ void ol_menu_no_lyric (GtkWidget *widget, gpointer data);
 void ol_menu_assign_lrc (GtkWidget *widget, gpointer data);
 void ol_menu_advance_lrc (GtkWidget *widget, gpointer data);
 void ol_menu_delay_lrc (GtkWidget *widget, gpointer data);
-void ol_menu_switch_osd (GtkWidget *widget, gpointer data);
-void ol_menu_switch_scrolling (GtkWidget *widget, gpointer data);
-static void _display_mode_changed_cb (OlConfigProxy *config,
-                                      const gchar *key,
-                                      gpointer data);
+void ol_menu_toggle_osd (GtkWidget *widget, gpointer data);
+void ol_menu_toggle_scrolling (GtkWidget *widget, gpointer data);
+static void _display_mode_osd_changed_cb (OlConfigProxy *config,
+                                          const gchar *key,
+                                          gpointer data);
+static void _display_mode_scroll_changed_cb (OlConfigProxy *config,
+                                             const gchar *key,
+                                             gpointer data);
 static void _visible_changed_cb (OlConfigProxy *config,
                                  const gchar *key,
                                  gpointer data);
@@ -180,26 +183,25 @@ _visible_changed_cb (OlConfigProxy *config,
 }
 
 static void
-_display_mode_changed_cb (OlConfigProxy *config,
-                          const gchar *key,
-                          gpointer data)
+_display_mode_osd_changed_cb (OlConfigProxy *config,
+                              const gchar *key,
+                              gpointer data)
 {
-  char *mode = ol_config_proxy_get_string (config, key);
-  if (g_ascii_strcasecmp (mode, "OSD") == 0)
-  {
-    gtk_widget_show (menu.lock);
-    gtk_widget_show (menu.hide);
-    gtk_widget_show (menu.switch_scroll);
-    gtk_widget_hide (menu.switch_osd);
-  }
-  else
-  {
-    gtk_widget_hide (menu.lock);
-    gtk_widget_hide (menu.hide);
-    gtk_widget_hide (menu.switch_scroll);
-    gtk_widget_show (menu.switch_osd);
-  }
-  g_free (mode);
+  gboolean osd_enabled = ol_config_proxy_get_bool (config, key);
+  gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (menu.switch_osd),
+                                  osd_enabled);
+  gtk_widget_set_visible(menu.lock, osd_enabled);
+  gtk_widget_set_visible(menu.hide, osd_enabled);
+}
+
+static void
+_display_mode_scroll_changed_cb (OlConfigProxy *config,
+                                 const gchar *key,
+                                 gpointer data)
+{
+  gboolean scroll_enabled = ol_config_proxy_get_bool (config, key);
+  gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (menu.switch_scroll),
+                                  scroll_enabled);
 }
 
 void
@@ -221,19 +223,27 @@ ol_menu_hide (GtkWidget *widget, gpointer data)
 }
 
 void
-ol_menu_switch_osd (GtkWidget *widget, gpointer data)
+ol_menu_toggle_osd (GtkWidget *widget, gpointer data)
 {
   OlConfigProxy *config = ol_config_proxy_get_instance ();
   ol_assert (config != NULL);
-  ol_config_proxy_set_string (config, "General/display-mode", "OSD");
+  gboolean osd_enabled = 
+      gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (widget));
+  ol_config_proxy_set_bool (config,
+                            "General/display-mode-osd",
+                            osd_enabled);
 }
 
 void
-ol_menu_switch_scrolling (GtkWidget *widget, gpointer data)
+ol_menu_toggle_scroll (GtkWidget *widget, gpointer data)
 {
   OlConfigProxy *config = ol_config_proxy_get_instance ();
   ol_assert (config != NULL);
-  ol_config_proxy_set_string (config, "General/display-mode", "scroll");
+  gboolean scroll_enabled = 
+      gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (widget));
+  ol_config_proxy_set_bool (config,
+                            "General/display-mode-scroll",
+                            scroll_enabled);
 }
 
 void
@@ -328,12 +338,13 @@ ol_menu_init ()
   menu.next = ol_gui_get_widget ("menu-next");
 
   menu.switch_osd = ol_gui_get_widget ("menu-switch-osd");
-  menu.switch_scroll = ol_gui_get_widget ("menu-switch-scrolling");
+  menu.switch_scroll = ol_gui_get_widget ("menu-switch-scroll");
   
   gtk_widget_show_all (popup_menu);
   _locked_changed_cb (config, "OSD/locked", NULL);
   _visible_changed_cb (config, ".visible", NULL);
-  _display_mode_changed_cb (config, "General/display-mode", NULL);
+  _display_mode_osd_changed_cb (config, "General/display-mode-osd", NULL);
+  _display_mode_scroll_changed_cb (config, "General/display-mode-scroll", NULL);
   g_signal_connect (config,
                     "changed::OSD/locked",
                     G_CALLBACK (_locked_changed_cb),
@@ -343,8 +354,12 @@ ol_menu_init ()
                     G_CALLBACK (_visible_changed_cb),
                     NULL);
   g_signal_connect (config,
-                    "changed::General/display-mode",
-                    G_CALLBACK (_display_mode_changed_cb),
+                    "changed::General/display-mode-osd",
+                    G_CALLBACK (_display_mode_osd_changed_cb),
+                    NULL);
+  g_signal_connect (config,
+                    "changed::General/display-mode-scroll",
+                    G_CALLBACK (_display_mode_scroll_changed_cb),
                     NULL);
 }
 

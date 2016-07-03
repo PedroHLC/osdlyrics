@@ -71,8 +71,8 @@ static OlPlayer *player = NULL;
 static OlMetadata *current_metadata = NULL;
 static OlLrc *current_lrc = NULL;
 static OlLyrics *lyrics_proxy = NULL;
-static char *display_mode = NULL;
-static struct OlDisplayModule *display_module = NULL;
+static struct OlDisplayModule *display_module_osd = NULL;
+static struct OlDisplayModule *display_module_scroll = NULL;
 static gboolean initialized = FALSE;
 static enum _PlayerLostAction {
   ACTION_NONE = 0,
@@ -82,6 +82,13 @@ static enum _PlayerLostAction {
   ACTION_QUIT,
 } player_lost_action = ACTION_LAUNCH_DEFAULT;
 static OlPlayerChooser *player_chooser = NULL;
+
+#define CALL_DISPLAY_MODULES(func, args...) \
+    do \
+    { \
+      if (display_module_osd) func(display_module_osd, ##args); \
+      if (display_module_scroll) func(display_module_scroll, ##args); \
+    } while (0)
 
 static void _initialize (int argc, char **argv);
 static void _wait_for_player_launch (void);
@@ -145,18 +152,24 @@ _display_mode_changed (OlConfigProxy *config,
                        const gchar *key,
                        gpointer userdata)
 {
-  char *mode = ol_config_proxy_get_string (config, key);
-  if (display_mode == NULL ||
-      ol_stricmp (mode, display_mode, -1) != 0)
+  gboolean is_osd = strcmp(key, "General/display-mode-osd") == 0;
+  struct OlDisplayModule **display_module = (is_osd ? &display_module_osd
+                                                    : &display_module_scroll);
+  gboolean display_enabled = ol_config_proxy_get_bool (config, key);
+
+  if ((*display_module == NULL) != display_enabled)
+    return; /* Nothing to do */
+
+  if (display_enabled)
   {
-    if (display_mode != NULL)
-      g_free (display_mode);
-    display_mode = g_strdup (mode);
-    ol_display_module_free (display_module);
-    display_module = ol_display_module_new (display_mode, player);
-    ol_display_module_set_lrc (display_module, current_lrc);
+    *display_module = ol_display_module_new (is_osd ? "OSD" : "scroll", player);
+    ol_display_module_set_lrc (*display_module, current_lrc);
   }
-  g_free (mode);
+  else
+  {
+    ol_display_module_free (*display_module);
+    *display_module = NULL;
+  }
 }
 
 static void
@@ -189,7 +202,8 @@ _download_complete_cb (OlLyricSourceDownloadTask *task,
     }
     else if (status == OL_LYRIC_SOURCE_STATUS_FALIURE)
     {
-      ol_display_module_download_fail_message (display_module, _("Fail to download lyric"));
+      CALL_DISPLAY_MODULES (ol_display_module_download_fail_message,
+                            _("Fail to download lyric"));
     }
     download_task = NULL;
   }
@@ -205,9 +219,8 @@ _do_download (OlLyricSourceCandidate *candidate,
   download_task = ol_lyric_source_download (lyric_source,
                                             candidate);
   g_object_ref (download_task);
-  ol_display_module_set_message (display_module,
-                                 _("Downloading lyric"),
-                                 -1);
+  CALL_DISPLAY_MODULES (ol_display_module_set_message,
+                        _("Downloading lyric"), -1);
   g_signal_connect (G_OBJECT (download_task),
                     "complete",
                     G_CALLBACK (_download_complete_cb),
@@ -224,18 +237,15 @@ _search_complete_cb (OlLyricSourceSearchTask *task,
   {
     if (status == OL_LYRIC_SOURCE_STATUS_SUCCESS && results != NULL)
     {
-      if (display_module != NULL)
-      {
-        ol_display_module_clear_message (display_module);
-      }
+      CALL_DISPLAY_MODULES (ol_display_module_clear_message);
       /* TODO: show lyric select ui */
       ol_lyric_candidate_selector_show (results, current_metadata, _do_download);
     }
     else if ((status == OL_LYRIC_SOURCE_STATUS_SUCCESS && results == NULL) ||
              status == OL_LYRIC_SOURCE_STATUS_FALIURE)
     {
-      if (display_module != NULL)
-        ol_display_module_search_fail_message (display_module, _("Lyrics not found"));
+      CALL_DISPLAY_MODULES (ol_display_module_search_fail_message,
+                            _("Lyrics not found"));
     }
     search_task = NULL;
   }
@@ -248,10 +258,10 @@ _search_started_cb (OlLyricSourceSearchTask *task,
                     const gchar *sourcename,
                     gpointer userdata)
 {
-  if (task == search_task && display_module != NULL)
+  if (task == search_task)
   {
     char *msg = g_strdup_printf (_("Searching lyrics from %s"), sourcename);
-    ol_display_module_search_message (display_module, msg);
+    CALL_DISPLAY_MODULES (ol_display_module_search_message, msg);
     g_free (msg);
   }
 }
@@ -313,8 +323,7 @@ static void
 _track_changed_cb (void)
 {
   ol_log_func ();
-  if (display_module != NULL)
-    ol_display_module_set_lrc (display_module, NULL);
+  CALL_DISPLAY_MODULES (ol_display_module_set_lrc, NULL);
   ol_player_get_metadata (player, current_metadata);
   _change_lrc ();
   OlConfigProxy *config = ol_config_proxy_get_instance ();
@@ -349,8 +358,7 @@ _change_lrc (void)
   if (current_lrc)
     g_object_unref (current_lrc);
   current_lrc = ol_lyrics_get_current_lyrics (lyrics_proxy);
-  if (display_module)
-    ol_display_module_set_lrc (display_module, current_lrc);
+  CALL_DISPLAY_MODULES (ol_display_module_set_lrc, current_lrc);
   if (current_lrc == NULL &&
       !ol_is_string_empty (ol_metadata_get_title (current_metadata)))
     ol_app_download_lyric (current_metadata);
@@ -483,17 +491,7 @@ _player_connected_cb (void)
       gtk_widget_get_visible (GTK_WIDGET (player_chooser)))
     ol_player_chooser_set_info_by_state (player_chooser,
                                          OL_PLAYER_CHOOSER_STATE_CONNECTED);
-  if (!display_module)
-  {
-    /* Initialize display modules */
-    OlConfigProxy *config = ol_config_proxy_get_instance ();
-    ol_display_module_init ();
-    display_mode = ol_config_proxy_get_string (config, "General/display-mode");
-    display_module = ol_display_module_new (display_mode, player);
-    g_signal_connect (config, "changed::General/display-mode",
-                      G_CALLBACK (_display_mode_changed),
-                      NULL);
-  }
+
   player_lost_action = ACTION_QUIT;
   _start_position_timer ();
 }
@@ -504,8 +502,7 @@ _update_position (gpointer data)
   ol_log_func ();
   guint64 time = 0;
   ol_player_get_position (player, &time);
-  if (display_module)
-    ol_display_module_set_played_time (display_module, time);
+  CALL_DISPLAY_MODULES (ol_display_module_set_played_time, time);
   return TRUE;
 }
 
@@ -830,6 +827,18 @@ _init_dbus_connection_done (void)
   ol_trayicon_init ();
   ol_notify_init ();
   ol_keybinding_init ();
+  ol_display_module_init ();
+
+  /* Initialize display modules */
+  OlConfigProxy *config = ol_config_proxy_get_instance ();
+  _display_mode_changed (config, "General/display-mode-osd", NULL);
+  _display_mode_changed (config, "General/display-mode-scroll", NULL);
+  g_signal_connect (config, "changed::General/display-mode-osd",
+                    G_CALLBACK (_display_mode_changed),
+                    NULL);
+  g_signal_connect (config, "changed::General/display-mode-scroll",
+                    G_CALLBACK (_display_mode_changed),
+                    NULL);
 
   if (ol_player_is_connected (player))
   {
@@ -862,16 +871,8 @@ _uninitialize (void)
   ol_metadata_free (current_metadata);
   current_metadata = NULL;
   ol_notify_unload ();
-  if (display_module != NULL)
-  {
-    ol_display_module_free (display_module);
-    display_module = NULL;
-  }
-  if (display_mode != NULL)
-  {
-    g_free (display_mode);
-    display_mode = NULL;
-  }
+
+  CALL_DISPLAY_MODULES (ol_display_module_free);
   if (player_chooser != NULL)
   {
     gtk_widget_destroy (GTK_WIDGET (player_chooser));

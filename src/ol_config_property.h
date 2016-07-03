@@ -111,6 +111,8 @@ static const OlConfigBoolValue config_bool[] = {
   {".visible", TRUE},
   {"OSD/translucent-on-mouse-over", TRUE},
   {"Download/download-first-lyric", FALSE},
+  {"General/display-mode-osd", TRUE},
+  {"General/display-mode-scroll", TRUE},
   {"General/notify-music", TRUE},
 };
 
@@ -140,7 +142,6 @@ static const OlConfigStringValue config_str[] = {
   {"Download/proxy-username", ""},
   {"Download/proxy-password", ""},
   {"General/startup-player", ""},
-  {"General/display-mode", "OSD"},
   {"OSD/osd-window-mode", "dock"},
   {"ScrollMode/font-name", "Sans 12"},
   {"ScrollMode/bg-color", "#000000"},
