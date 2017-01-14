@@ -141,7 +141,7 @@ def parse_lrc(content):
                 lyrics.append({ 'timestamp': dbus.types.Int64(timestamp),
                                 'text': token.text })
             timetags = []
-    lyrics.sort(lambda a,b: cmp(a['timestamp'], b['timestamp']))
+    lyrics.sort(key=lambda a: a['timestamp'])
     i = 0
     for lyric in lyrics:
         lyric['id'] = dbus.types.UInt32(i)

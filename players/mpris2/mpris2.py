@@ -24,14 +24,13 @@ import dbus
 import dbus.service
 import dbus.types
 
-from osdlyrics.consts import MPRIS2_OBJECT_PATH, MPRIS2_PLAYER_INTERFACE
+from osdlyrics.consts import (DAEMON_MPRIS2_NAME, MPRIS2_OBJECT_PATH,
+                              MPRIS2_PLAYER_INTERFACE, MPRIS2_PREFIX)
 from osdlyrics.metadata import Metadata
 from osdlyrics.player_proxy import (
     BasePlayer, BasePlayerProxy, PlayerInfo, CAPS_NEXT, CAPS_PAUSE, CAPS_PLAY,
     CAPS_PREV, CAPS_SEEK, REPEAT_ALL, REPEAT_NONE, REPEAT_TRACK, STATUS_PAUSED,
     STATUS_PLAYING, STATUS_STOPPED)
-
-MPRIS2_PREFIX = 'org.mpris.MediaPlayer2.'
 
 
 def player_info_from_name(name):
@@ -58,8 +57,9 @@ class ProxyObject(BasePlayerProxy):
         Arguments:
         - `names`: list of bus names
         """
-        return [player_info_from_name(name[len(MPRIS2_PREFIX):]) for name in names
-                if name.startswith(MPRIS2_PREFIX)]
+        return [player_info_from_name(name[len(MPRIS2_PREFIX):])
+                for name in names if name.startswith(MPRIS2_PREFIX) and
+                name != DAEMON_MPRIS2_NAME]
 
     def do_list_active_players(self):
         return self._get_player_from_bus_names(self.connection.list_names())

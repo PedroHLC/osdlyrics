@@ -49,9 +49,8 @@ class Property(object):
                        and a setter function is set.
         """
         self._type_signature = type_signature
-        # we use two underscores because dbus-python uses _dbus_interface to determine
-        # whether an object is a dbus method
-        self.__dbus_interface = dbus_interface
+        # CAVEAT: python-dbus uses "_dbus_interface" internally (in service.py)
+        self._interface = dbus_interface
         self._fset = fset
         self._fget = fget
         self.__name__ = name
@@ -66,7 +65,7 @@ class Property(object):
     def interface(self):
         """ Return the dbus interface of this property
         """
-        return self.__dbus_interface
+        return self._interface
 
     @property
     def readable(self):

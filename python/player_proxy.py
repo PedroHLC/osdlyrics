@@ -236,39 +236,39 @@ class BasePlayer(DBusObject):
         - `proxy`: The BasePlayerProxy object that creates the player
         - `name`: The name of the player object
         """
-        self.__object_path = (PLAYER_PROXY_OBJECT_PATH_PREFIX + proxy.name +
-                              '/' + name)
+        self._object_path = (PLAYER_PROXY_OBJECT_PATH_PREFIX + proxy.name +
+                             '/' + name)
         super(BasePlayer, self).__init__(conn=proxy.connection,
-                                         object_path=self.__object_path)
-        self.__name = name
-        self.__proxy = proxy
-        self.__disconnect_cb = None
-        self.__connected = True
-        self.__timer = None
-        self.__status = None
-        self.__loop_status = None
-        self.__metadata = None
-        self.__current_trackid = 0
-        self.__caps = None
-        self.__shuffle = None
+                                         object_path=self._object_path)
+        self._name = name
+        self._proxy = proxy
+        self._disconnect_cb = None
+        self._connected = True
+        self._timer = None
+        self._status = None
+        self._loop_status = None
+        self._metadata = None
+        self._current_trackid = 0
+        self._caps = None
+        self._shuffle = None
 
     def set_disconnect_cb(self, disconnect_cb):
-        self.__disconnect_cb = disconnect_cb
+        self._disconnect_cb = disconnect_cb
 
     @property
     def name(self):
-        return self.__name
+        return self._name
 
     @property
     def proxy(self):
-        return self.__proxy
+        return self._proxy
 
     def disconnect(self):
-        if self.__connected:
-            self.__connected = False
+        if self._connected:
+            self._connected = False
             self.remove_from_connection()
-            if callable(self.__disconnect_cb):
-                self.__disconnect_cb(self)
+            if callable(self._disconnect_cb):
+                self._disconnect_cb(self)
 
     def get_status(self):
         """
@@ -406,38 +406,38 @@ class BasePlayer(DBusObject):
             STATUS_PLAYING: 'play',
             STATUS_STOPPED: 'stop',
             }
-        if self.__timer:
-            getattr(self.__timer, status_map[status])()
+        if self._timer:
+            getattr(self._timer, status_map[status])()
 
     def _setup_timer(self):
-        if self.__timer is None:
-            self.__timer = timer.Timer()
+        if self._timer is None:
+            self._timer = timer.Timer()
             self._setup_timer_status(self._get_cached_status())
 
     def _get_cached_position(self):
         """
         Get the current position from cached timer if possible
         """
-        if self.__timer is None:
+        if self._timer is None:
             self._setup_timer()
             if self._get_cached_status() != STATUS_STOPPED:
-                self.__timer.time = self.get_position()
-        return self.__timer.time
+                self._timer.time = self.get_position()
+        return self._timer.time
 
     def _get_cached_loop_status(self):
-        if self.__loop_status is None:
-            self.__loop_status = self.get_repeat()
-        return self.__loop_status
+        if self._loop_status is None:
+            self._loop_status = self.get_repeat()
+        return self._loop_status
 
     def _get_cached_status(self):
-        if self.__status is None:
-            self.__status = self.get_status()
-        return self.__status
+        if self._status is None:
+            self._status = self.get_status()
+        return self._status
 
     def _get_cached_metadata(self):
-        if self.__metadata is None:
-            self.__metadata = self._make_metadata(self.get_metadata())
-        return self.__metadata
+        if self._metadata is None:
+            self._metadata = self._make_metadata(self.get_metadata())
+        return self._metadata
 
     def _make_metadata(self, metadata):
         dct = metadata.to_mpris2()
@@ -445,25 +445,25 @@ class BasePlayer(DBusObject):
         return dct
 
     def _get_current_trackid(self):
-        return '/%s' % self.__current_trackid
+        return '/%s' % self._current_trackid
 
     def _get_cached_caps(self):
-        if self.__caps is None:
-            self.__caps = self.get_caps()
-        return self.__caps
+        if self._caps is None:
+            self._caps = self.get_caps()
+        return self._caps
 
     def _get_cached_shuffle(self):
-        if self.__shuffle is None:
-            self.__shuffle = self.get_shuffle()
-        return self.__shuffle
+        if self._shuffle is None:
+            self._shuffle = self.get_shuffle()
+        return self._shuffle
 
     @property
     def connected(self):
-        return self.__connected
+        return self._connected
 
     @property
     def object_path(self):
-        return self.__object_path
+        return self._object_path
 
     @dbus.service.method(dbus_interface=MPRIS2_PLAYER_INTERFACE,
                          in_signature='',
@@ -545,7 +545,7 @@ class BasePlayer(DBusObject):
 
     @PlaybackStatus.setter
     def PlaybackStatus(self, status):
-        self.__status = status
+        self._status = status
 
     @dbus_property(dbus_interface=MPRIS2_PLAYER_INTERFACE,
                    type_signature='s')
@@ -559,7 +559,7 @@ class BasePlayer(DBusObject):
 
     @LoopStatus.setter
     def LoopStatus(self, loop_status):
-        self.__loop_status = loop_status
+        self._loop_status = loop_status
 
     @LoopStatus.dbus_setter
     def LoopStatus(self, loop_status):
@@ -588,7 +588,7 @@ class BasePlayer(DBusObject):
 
     @Shuffle.setter
     def Shuffle(self, shuffle):
-        self.__shuffle = shuffle
+        self._shuffle = shuffle
 
     @Shuffle.dbus_setter
     def Shuffle(self, shuffle):
@@ -602,7 +602,7 @@ class BasePlayer(DBusObject):
 
     @Metadata.setter
     def Metadata(self, metadata):
-        self.__metadata = metadata
+        self._metadata = metadata
 
     @dbus_property(dbus_interface=MPRIS2_PLAYER_INTERFACE,
                    type_signature='d')
@@ -693,9 +693,9 @@ class BasePlayer(DBusObject):
         pass
 
     def track_changed(self, metadata=None):
-        self.__current_trackid += 1
-        if self.__timer is not None:
-            self.__timer.time = self.get_position()
+        self._current_trackid += 1
+        if self._timer is not None:
+            self._timer.time = self.get_position()
         if metadata is None:
             metadata = self.get_metadata()
         self.Metadata = self._make_metadata(metadata)
@@ -724,8 +724,8 @@ class BasePlayer(DBusObject):
         """
         Notify the capability of the player has been changed.
         """
-        orig_caps = self.__caps
-        self.__caps = self.get_caps()
+        orig_caps = self._caps
+        self._caps = self.get_caps()
         if orig_caps is not None:
             caps_map = {
                 CAPS_NEXT: 'CanGoNext',
@@ -735,13 +735,13 @@ class BasePlayer(DBusObject):
                 CAPS_SEEK: 'CanSeek',
                 }
             for cap, method in caps_map.items():
-                if cap in orig_caps != cap in self.__caps:
-                    setattr(self, method, cap in self.__caps)
+                if cap in orig_caps != cap in self._caps:
+                    setattr(self, method, cap in self._caps)
 
     def position_changed(self):
         """
         Notify that the position has been changed
         """
-        if self.__timer is not None:
-            self.__timer.time = self.get_position()
-        self.Seeked(self.__timer.time * 1000)
+        if self._timer is not None:
+            self._timer.time = self.get_position()
+        self.Seeked(self._timer.time * 1000)

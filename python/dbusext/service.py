@@ -20,6 +20,7 @@
 
 import logging
 import xml.etree.ElementTree as xet
+import sys
 
 import dbus
 import dbus.exceptions
@@ -27,6 +28,12 @@ import dbus.service
 import glib
 
 from .property import Property
+
+
+# Use the default encoding in ElementTree.tostring under Python 2, but prefer
+# Unicode under Python 3 to obtain a 'str', not 'bytes' instance.
+# TODO: remove once we have fully migrated to Python 3
+INTROSPECT_ENCODING = 'unicode' if sys.version_info >= (3, 0) else 'us-ascii'
 
 
 class ObjectTypeCls(dbus.service.Object.__class__):
@@ -204,7 +211,7 @@ class Object(ObjectType):
                 iface.append(_property2element(prop))
             node.append(iface)
         return '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"\n "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">\n' + \
-            xet.tostring(node)
+            xet.tostring(node, encoding=INTROSPECT_ENCODING)
 
 
 def property(type_signature,

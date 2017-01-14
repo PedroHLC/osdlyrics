@@ -103,21 +103,27 @@ def path2uri(path):
         path = path.encode('utf8')
     return 'file://' + urllib.pathname2url(path)
 
-def ensure_unicode(value):
-    r"""
-    If value is a string, decode with utf-8. Otherwise return it directly.
-    """
-    if isinstance(value, str):
-        return value.decode('utf8')
-    return value
 
-def ensure_utf8(value):
-    r"""
-    If value is a unicode, encode with utf-8. Otherwise return it directly.
-    """
-    if isinstance(value, unicode):
-        return value.encode('utf8')
-    return value
+# TODO: remove once we fully migrate to Python 3
+if sys.version_info < (3, 0):
+    def ensure_unicode(value):
+        r"""
+        If value is a string, decode with utf-8. Otherwise return it directly.
+        """
+        if isinstance(value, str):
+            return value.decode('utf8')
+        return value
+
+    def ensure_utf8(value):
+        r"""
+        If value is a unicode, encode with utf-8. Otherwise return it directly.
+        """
+        if isinstance(value, str):
+            return value.encode('utf8')
+        return value
+else:
+    ensure_unicode = ensure_utf8 = lambda s: s
+
 
 def get_proxy_settings(config=None, conn=None):
     r"""

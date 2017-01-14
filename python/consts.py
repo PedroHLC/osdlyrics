@@ -18,9 +18,13 @@
 # along with OSD Lyrics.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# DBus names, interfaces and object paths
-
+# D-Bus names, interfaces and object paths
+DAEMON_INTERFACE = 'org.osdlyrics.Daemon'
 DAEMON_BUS_NAME = 'org.osdlyrics.Daemon'
+DAEMON_OBJECT_PATH = '/org/osdlyrics/Daemon'
+MPRIS2_PREFIX = 'org.mpris.MediaPlayer2.'
+DAEMON_MPRIS2_NAME = 'org.mpris.MediaPlayer2.osdlyrics'
+
 CONFIG_BUS_NAME = 'org.osdlyrics.Config'
 CONFIG_OBJECT_PATH = '/org/osdlyrics/Config'
 PLAYER_PROXY_INTERFACE = 'org.osdlyrics.PlayerProxy'
